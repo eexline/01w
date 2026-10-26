@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="grok">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NOVA AI — AI CHAT</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Newsreader:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/chat.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<!-- ===================== ICON SPRITE ===================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+        <!-- Official brand marks, see logos/ for the untouched source files -->
+
+        <!-- xAI / Grok -->
+        <symbol id="logo-grok" viewBox="0 0 24 24">
+            <path fill="currentColor" fill-rule="evenodd" d="M6.469 8.776L16.512 23h-4.464L2.005 8.776H6.47zm-.004 7.9l2.233 3.164L6.467 23H2l4.465-6.324zM22 2.582V23h-3.659V7.764L22 2.582zM22 1l-9.952 14.095-2.233-3.163L17.533 1H22z"></path>
+        </symbol>
+
+        <!-- OpenAI / ChatGPT -->
+        <symbol id="logo-gpt" viewBox="0 0 24 24">
+            <path fill="currentColor" fill-rule="evenodd" d="M9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523zm5.899 2.83a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713z"></path>
+        </symbol>
+
+        <!-- Anthropic / Claude -->
+        <symbol id="logo-claude" viewBox="0 0 24 24">
+            <path fill="currentColor" fill-rule="evenodd" d="M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 01-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.668-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z"></path>
+        </symbol>
+
+        <!-- Google / Gemini — the mark keeps its own brand gradient -->
+        <lineargradient id="gemini-g0" gradientUnits="userSpaceOnUse" x1="7" x2="11" y1="15.5" y2="12">
+            <stop stop-color="#08B962"></stop><stop offset="1" stop-color="#08B962" stop-opacity="0"></stop>
+        </lineargradient>
+        <lineargradient id="gemini-g1" gradientUnits="userSpaceOnUse" x1="8" x2="11.5" y1="5.5" y2="11">
+            <stop stop-color="#F94543"></stop><stop offset="1" stop-color="#F94543" stop-opacity="0"></stop>
+        </lineargradient>
+        <lineargradient id="gemini-g2" gradientUnits="userSpaceOnUse" x1="3.5" x2="17.5" y1="13.5" y2="12">
+            <stop stop-color="#FABC12"></stop><stop offset=".46" stop-color="#FABC12" stop-opacity="0"></stop>
+        </lineargradient>
+        <symbol id="logo-gemini" viewBox="0 0 24 24">
+            <path fill="#3186FF" d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"></path>
+            <path fill="url(#gemini-g0)" d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"></path>
+            <path fill="url(#gemini-g1)" d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"></path>
+            <path fill="url(#gemini-g2)" d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"></path>
+        </symbol>
+
+        <!-- UI icons -->
+        <symbol id="ic-globe" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"></circle>
+            <path d="M3.2 9.6h17.6M3.2 14.4h17.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+            <path d="M12 3c2.4 2.5 3.6 5.5 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.5-3.6-9S9.6 5.5 12 3z" fill="none" stroke="currentColor" stroke-width="1.7"></path>
+        </symbol>
+        <symbol id="ic-send" viewBox="0 0 24 24">
+            <path d="M12 19V5M12 5l-6.2 6.2M12 5l6.2 6.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+        </symbol>
+        <symbol id="ic-chevron" viewBox="0 0 24 24">
+            <path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"></path>
+        </symbol>
+        <symbol id="ic-refresh" viewBox="0 0 24 24">
+            <path d="M20 11a8 8 0 0 0-14-4.6L4 8.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M4 4v4.6h4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M4 13a8 8 0 0 0 14 4.6l2-2.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M20 20v-4.6h-4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+        </symbol>
+        <symbol id="ic-lock" viewBox="0 0 24 24">
+            <rect x="5" y="10.5" width="14" height="10.5" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+            <path d="M8.2 10.5V7.2a3.8 3.8 0 0 1 7.6 0v3.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        </symbol>
+        <symbol id="ic-check" viewBox="0 0 24 24">
+            <path d="M4.5 12.6l5 5L19.5 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+        </symbol>
+        <symbol id="ic-nav-broker" viewBox="0 0 24 24">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+        </symbol>
+        <symbol id="ic-nav-chat" viewBox="0 0 24 24">
+            <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.7 8.7 0 0 1-3.8-.86L3 21l1.9-5.4A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+        </symbol>
+        <symbol id="ic-close" viewBox="0 0 24 24">
+            <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
+        </symbol>
+        <symbol id="ic-tri-up" viewBox="0 0 24 24">
+            <path d="M12 6l7.5 12.5h-15L12 6z" fill="currentColor"></path>
+        </symbol>
+        <symbol id="ic-tri-down" viewBox="0 0 24 24">
+            <path d="M12 18.5L4.5 6h15L12 18.5z" fill="currentColor"></path>
+        </symbol>
+    </defs>
+</svg>
+
+<!-- ===================== BACKDROP ===================== -->
+<div class="scene" aria-hidden="true">
+    <div class="scene-glow"></div>
+</div>
+
+<!-- ===================== TOP BAR ===================== -->
+<header class="tbar">
+    <div class="brand">NOVA <span class="brand-accent">AI</span></div>
+    <div class="tbar-right">
+        <button type="button" class="icon-btn" id="langBtn" aria-label="Language">
+            <svg class="ic"><use href="#ic-globe"></use></svg>
+        </button>
+        <div class="user-pill">
+            <img id="userAvatar" class="user-avatar" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="user">
+            <span id="userInfo">Guest</span>
+        </div>
+    </div>
+</header>
+
+<!-- ===================== STAGE ===================== -->
+<main class="stage" id="stage">
+
+    <!-- Empty state -->
+    <section class="hero" id="hero">
+        <div class="hero-tile" id="heroTile">
+            <svg class="hero-logo"><use id="heroLogoUse" href="#logo-grok"></use></svg>
+        </div>
+        <h1 class="hero-name" id="heroName">Grok 4.6</h1>
+        <p class="hero-sub" id="heroSub" data-i18n="chat_hero_sub">Set the instrument, market and expiration — then tap send to get a signal.</p>
+    </section>
+
+    <!-- Conversation -->
+    <section class="thread" id="thread"></section>
+
+</main>
+
+<!-- ===================== COMPOSER ===================== -->
+<div class="composer" id="composer">
+    <div class="composer-inner">
+
+        <div class="chip-row">
+            <button type="button" class="chip" id="chipPair" data-sheet="pair">
+                <span class="chip-flags" id="chipPairFlags"><span class="pair-icons"><img class="currency-icon base" src="/assets/flags/eu.svg" alt=""><img class="currency-icon quote" src="/assets/flags/us.svg" alt=""></span></span>
+                <span class="chip-text" id="chipPairText">EUR/USD</span>
+                <svg class="chip-caret"><use href="#ic-chevron"></use></svg>
+            </button>
+            <button type="button" class="chip" id="chipMarket" data-sheet="market">
+                <span class="chip-text" id="chipMarketText">Regular</span>
+                <svg class="chip-caret"><use href="#ic-chevron"></use></svg>
+            </button>
+            <button type="button" class="chip" id="chipTf" data-sheet="tf">
+                <span class="chip-text" id="chipTfText">1m</span>
+                <svg class="chip-caret"><use href="#ic-chevron"></use></svg>
+            </button>
+        </div>
+
+        <div class="prompt-box" id="promptBox">
+            <span class="prompt-text" id="promptText"><span class="p-hl">EUR/USD</span>, expiration time 1 minute — analyze the chart.</span>
+        </div>
+
+        <div class="composer-bottom">
+            <button type="button" class="model-pill" id="modelPill">
+                <svg class="model-pill-logo"><use id="modelPillLogoUse" href="#logo-grok"></use></svg>
+                <span id="modelPillName">Grok 4.6</span>
+                <svg class="chip-caret"><use href="#ic-chevron"></use></svg>
+            </button>
+            <button type="button" class="send-btn" id="sendBtn" aria-label="Send">
+                <svg class="ic send-ic"><use id="sendIconUse" href="#ic-send"></use></svg>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===================== BROKER IFRAME ===================== -->
+<div id="brokerView" class="broker-view hidden" aria-hidden="true">
+    <iframe id="brokerFrame" class="broker-frame" title="Broker" src="about:blank" allow="clipboard-write; payment *; fullscreen"></iframe>
+</div>
+
+<!-- ===================== BOTTOM NAV ===================== -->
+<nav class="bottom-nav">
+    <a href="#" class="nav-item" data-nav="broker" id="navBroker">
+        <svg class="nav-ic"><use href="#ic-nav-broker"></use></svg>
+        <span data-i18n="nav_broker">BROKER</span>
+    </a>
+    <a href="/" class="nav-item active" data-nav="chat" id="navChat">
+        <svg class="nav-ic"><use href="#ic-nav-chat"></use></svg>
+        <span data-i18n="nav_chat">AI CHAT</span>
+    </a>
+</nav>
+
+<!-- ===================== BOTTOM SHEET ===================== -->
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head">
+        <span class="sheet-title" id="sheetTitle">Title</span>
+        <button type="button" class="sheet-close" id="sheetClose" aria-label="Close">
+            <svg class="ic"><use href="#ic-close"></use></svg>
+        </button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<!-- ===================== LOCK ALERT ===================== -->
+<div class="modal" id="alertModal">
+    <div class="modal-card">
+        <div class="modal-icon"><svg class="ic"><use href="#ic-lock"></use></svg></div>
+        <h3 class="modal-title" data-i18n="alert_title">Signal Unavailable</h3>
+        <p class="modal-desc" data-i18n="alert_desc">You cannot get a new signal right now because the previous signal is still active. Please wait for the timeframe to end.</p>
+        <button type="button" class="modal-btn" id="closeAlertBtn" data-i18n="alert_btn_got_it">Got it</button>
+    </div>
+</div>
+
+<!-- ===================== CHAT ACCESS ===================== -->
+<div class="modal hidden" id="accessModal">
+    <div class="modal-card">
+        <div class="modal-icon"><svg class="ic"><use href="#ic-lock"></use></svg></div>
+        <h3 class="modal-title" id="accessModalTitle" data-i18n="access_title">AI Chat locked</h3>
+        <p class="modal-desc" id="accessModalDesc" data-i18n="access_no_user">Please open this app via Telegram.</p>
+        <button type="button" class="modal-btn" id="accessOpenBrokerBtn" data-i18n="access_open_broker">Open Broker</button>
+    </div>
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/access.js"></script>
+<script src="/js/chat.js"></script>
+
+
+</body></html>
