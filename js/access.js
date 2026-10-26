@@ -30,7 +30,8 @@
     }
 
     function apiBase() {
-        return (cfg().STATUS_API_URL || "").replace(/\/$/, "");
+        // Всегда same-origin proxy на Vercel → upstream STATUS_API_URL (можно http)
+        return (cfg().STATUS_API_URL || "/api").replace(/\/$/, "") || "/api";
     }
 
     async function loadAppSettings() {
@@ -44,7 +45,6 @@
                 } catch (_) {}
             }
             const base = apiBase();
-            if (!base) return cfg();
             try {
                 const res = await fetch(`${base}/app/settings`);
                 if (!res.ok) throw new Error("settings_http_" + res.status);
@@ -152,16 +152,6 @@
     async function fetchUserStatus(telegramId) {
         await loadAppSettings();
         const base = apiBase();
-        if (!base) {
-            console.warn("[access] STATUS_API_URL is empty (set it in Vercel env)");
-            return {
-                registered: false,
-                deposit: 0,
-                min_deposit: cfg().MIN_DEPOSIT || 100,
-                chat_unlocked: false,
-                error: "no_api",
-            };
-        }
         const res = await fetch(
             `${base}/user/status?telegram_id=${encodeURIComponent(telegramId)}`,
             { method: "GET" }
