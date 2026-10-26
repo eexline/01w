@@ -1,5 +1,5 @@
 /* ============================================
- * NOVA AI — main client script
+ * DAVID AI — main client script
  * ============================================ */
 
 const API_URL = "https://tradeaiapi.fatalnetwork.ru";

@@ -3,5 +3,10 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/", "destination": "/chat.html" }
-  ]
+  ],
+  "functions": {
+    "api/user/wait.js": {
+      "maxDuration": 30
+    }
+  }
 }

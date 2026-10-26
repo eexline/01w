@@ -1,5 +1,5 @@
 /* =======================================================================
-   NOVA AI — AI CHAT section
+   DAVID AI — AI CHAT section
    Self-contained stylesheet. Model themes are driven by [data-theme] on
    <html>; every visual token below is re-declared per theme.
    ======================================================================= */
@@ -22,9 +22,9 @@
     --tg-top: env(safe-area-inset-top, 0px);
     --tg-bottom: env(safe-area-inset-bottom, 0px);
 
-    --nav-h: 62px;
-    /* nav-item 50 + padding 12 + margin-bottom 10 + gap над nav */
-    --nav-stack: calc(72px + var(--tg-bottom, 0px));
+    --nav-h: 0px;
+    /* нижний навбар убран — отступ только под safe-area */
+    --nav-stack: calc(12px + var(--tg-bottom, 0px));
     --radius-lg: 22px;
     --radius-md: 16px;
     --radius-sm: 12px;
@@ -1315,44 +1315,199 @@ html[data-theme="gemini"] .modal-card { background: #121320; }
     .model-pill { font-size: 12.5px; padding: 0 10px; }
 }
 
-/* ------------------------------ BROKER IFRAME -------------------------- */
+/* ------------------------------ ONBOARDING ----------------------------- */
 
-.broker-view {
+.bottom-nav { display: none !important; }
+
+.onboarding {
     position: fixed;
     inset: 0;
-    z-index: 1;
+    z-index: 40;
     display: flex;
     flex-direction: column;
-    background: transparent;
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, var(--glow), transparent 55%),
+        var(--bg);
+    color: var(--text);
+    padding:
+        calc(var(--tg-top, 0px) + 56px)
+        22px
+        calc(var(--tg-bottom, 0px) + 24px);
+    box-sizing: border-box;
 }
 
-.broker-view.hidden {
+.onboarding.hidden {
     display: none !important;
 }
 
-.broker-frame {
+.ob-inner {
     flex: 1;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 440px;
     width: 100%;
-    height: 100%;
+    margin: 0 auto;
+}
+
+.ob-tabs {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+}
+
+.ob-tab {
+    appearance: none;
     border: 0;
     background: transparent;
+    color: var(--dim);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 14px 8px 16px;
+    cursor: pointer;
+    transition: color 0.2s var(--ease);
 }
 
-body.broker-open .scene,
-body.broker-open .tbar,
-body.broker-open .stage,
-body.broker-open .composer,
-body.broker-open .sheet,
-body.broker-open .sheet-backdrop {
+.ob-tab.active {
+    color: var(--text);
+}
+
+.ob-tab:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.ob-tab-line {
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 50%;
+    height: 2px;
+    background: var(--acc);
+    border-radius: 2px 2px 0 0;
+    transition: transform 0.28s var(--ease);
+    transform: translateX(0);
+}
+
+.ob-tab-line.deposit {
+    transform: translateX(100%);
+}
+
+.ob-step {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--acc-text);
+    text-transform: uppercase;
+}
+
+.ob-title {
+    margin: 0 0 14px;
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: clamp(32px, 8vw, 40px);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+.ob-desc {
+    margin: 0 0 28px;
+    font-size: 15.5px;
+    line-height: 1.55;
+    color: var(--dim);
+    max-width: 34em;
+}
+
+.ob-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.ob-steps li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 15.5px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.ob-num {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-2);
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dim);
+}
+
+.ob-meta {
+    margin: 22px 0 0;
+    font-size: 13.5px;
+    color: var(--dim);
+}
+
+.ob-footer {
+    flex-shrink: 0;
+    max-width: 440px;
+    width: 100%;
+    margin: 20px auto 0;
+}
+
+.ob-cta {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 0;
+    border-radius: 999px;
+    padding: 16px 22px;
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--send-fg);
+    background: linear-gradient(135deg, var(--acc) 0%, var(--acc-2) 100%);
+    box-shadow: 0 10px 28px var(--send-ring);
+    cursor: pointer;
+    transition: transform 0.15s var(--ease), filter 0.15s var(--ease);
+}
+
+.ob-cta:active {
+    transform: scale(0.98);
+    filter: brightness(0.96);
+}
+
+.ob-cta-ic {
+    width: 18px;
+    height: 18px;
+    opacity: 0.9;
+}
+
+.ob-panel.hidden,
+.ob-footer.hidden {
     display: none !important;
 }
 
-/* nav поверх iframe, зафиксирован снизу как в чате */
-body.broker-open .bottom-nav {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(var(--tg-bottom, 0px) + 10px);
-    z-index: 50;
-    margin: 0;
+body.onboarding-open .tbar,
+body.onboarding-open .stage,
+body.onboarding-open .composer,
+body.onboarding-open .sheet,
+body.onboarding-open .sheet-backdrop {
+    display: none !important;
 }

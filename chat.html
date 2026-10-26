@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>NOVA AI — AI CHAT</title>
+    <title>DAVID AI — AI CHAT</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Newsreader:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/chat.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body>
+<body class="onboarding-open">
 
 <!-- ===================== ICON SPRITE ===================== -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -100,7 +100,7 @@
 
 <!-- ===================== TOP BAR ===================== -->
 <header class="tbar">
-    <div class="brand">NOVA <span class="brand-accent">AI</span></div>
+    <div class="brand">DAVID <span class="brand-accent">AI</span></div>
     <div class="tbar-right">
         <button type="button" class="icon-btn" id="langBtn" aria-label="Language">
             <svg class="ic"><use href="#ic-globe"></use></svg>
@@ -167,22 +167,58 @@
     </div>
 </div>
 
-<!-- ===================== BROKER IFRAME ===================== -->
-<div id="brokerView" class="broker-view hidden" aria-hidden="true">
-    <iframe id="brokerFrame" class="broker-frame" title="Broker" src="about:blank" allow="clipboard-write; payment *; fullscreen"></iframe>
-</div>
+<!-- ===================== ONBOARDING (reg → deposit → chat) ===================== -->
+<section id="onboarding" class="onboarding" aria-hidden="false">
+    <div class="ob-inner">
+        <div class="ob-tabs" role="tablist">
+            <button type="button" class="ob-tab active" id="obTabAccount" data-ob-tab="account" role="tab" aria-selected="true">
+                <span data-i18n="ob_tab_account">Account</span>
+            </button>
+            <button type="button" class="ob-tab" id="obTabDeposit" data-ob-tab="deposit" role="tab" aria-selected="false" disabled>
+                <span data-i18n="ob_tab_deposit">Deposit</span>
+            </button>
+            <div class="ob-tab-line" id="obTabLine"></div>
+        </div>
 
-<!-- ===================== BOTTOM NAV ===================== -->
-<nav class="bottom-nav">
-    <a href="#" class="nav-item" data-nav="broker" id="navBroker">
-        <svg class="nav-ic"><use href="#ic-nav-broker"></use></svg>
-        <span data-i18n="nav_broker">BROKER</span>
-    </a>
-    <a href="/" class="nav-item active" data-nav="chat" id="navChat">
-        <svg class="nav-ic"><use href="#ic-nav-chat"></use></svg>
-        <span data-i18n="nav_chat">AI CHAT</span>
-    </a>
-</nav>
+        <p class="ob-step" id="obStepLabel">STEP 1 OF 2</p>
+
+        <!-- Account -->
+        <div class="ob-panel" id="obPanelAccount" data-ob-panel="account">
+            <h1 class="ob-title" data-i18n="ob_reg_title">Create your account</h1>
+            <p class="ob-desc" data-i18n="ob_reg_desc">Register with the broker using the button below to get access to AI signals. It takes about two minutes.</p>
+            <ol class="ob-steps">
+                <li><span class="ob-num">1</span><span data-i18n="ob_reg_s1">Tap Register</span></li>
+                <li><span class="ob-num">2</span><span data-i18n="ob_reg_s2">Sign up on the broker's page</span></li>
+                <li><span class="ob-num">3</span><span data-i18n="ob_reg_s3">Come back here, we confirm it automatically</span></li>
+            </ol>
+        </div>
+
+        <!-- Deposit -->
+        <div class="ob-panel hidden" id="obPanelDeposit" data-ob-panel="deposit">
+            <h1 class="ob-title" data-i18n="ob_dep_title">Make a deposit</h1>
+            <p class="ob-desc" id="obDepDesc">Deposit at least $100 to unlock AI Chat. After the deposit is credited, return here.</p>
+            <ol class="ob-steps">
+                <li><span class="ob-num">1</span><span data-i18n="ob_dep_s1">Tap Deposit</span></li>
+                <li><span class="ob-num">2</span><span data-i18n="ob_dep_s2">Fund your broker account</span></li>
+                <li><span class="ob-num">3</span><span data-i18n="ob_dep_s3">Come back — access opens automatically</span></li>
+            </ol>
+            <p class="ob-meta" id="obDepMeta"></p>
+        </div>
+
+        <!-- No Telegram user -->
+        <div class="ob-panel hidden" id="obPanelGuest" data-ob-panel="guest">
+            <h1 class="ob-title" data-i18n="ob_guest_title">Open via Telegram</h1>
+            <p class="ob-desc" data-i18n="access_no_user">Please open this app via Telegram.</p>
+        </div>
+    </div>
+
+    <div class="ob-footer" id="obFooter">
+        <button type="button" class="ob-cta" id="obCta">
+            <span id="obCtaText" data-i18n="ob_reg_cta">Register</span>
+            <svg class="ob-cta-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3zM5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>
+        </button>
+    </div>
+</section>
 
 <!-- ===================== BOTTOM SHEET ===================== -->
 <div class="sheet-backdrop" id="sheetBackdrop"></div>
@@ -204,16 +240,6 @@
         <h3 class="modal-title" data-i18n="alert_title">Signal Unavailable</h3>
         <p class="modal-desc" data-i18n="alert_desc">You cannot get a new signal right now because the previous signal is still active. Please wait for the timeframe to end.</p>
         <button type="button" class="modal-btn" id="closeAlertBtn" data-i18n="alert_btn_got_it">Got it</button>
-    </div>
-</div>
-
-<!-- ===================== CHAT ACCESS ===================== -->
-<div class="modal hidden" id="accessModal">
-    <div class="modal-card">
-        <div class="modal-icon"><svg class="ic"><use href="#ic-lock"></use></svg></div>
-        <h3 class="modal-title" id="accessModalTitle" data-i18n="access_title">AI Chat locked</h3>
-        <p class="modal-desc" id="accessModalDesc" data-i18n="access_no_user">Please open this app via Telegram.</p>
-        <button type="button" class="modal-btn" id="accessOpenBrokerBtn" data-i18n="access_open_broker">Open Broker</button>
     </div>
 </div>
 

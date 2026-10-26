@@ -1,5 +1,5 @@
 /* ============================================
- * Broker iframe + AI Chat access gate
+ * Onboarding gate: Account → Deposit → Chat
  * Requires: window.APP_CONFIG, Telegram.WebApp (optional)
  * ============================================ */
 
@@ -7,6 +7,15 @@
     const cfg = () => global.APP_CONFIG || {};
     let settingsLoaded = false;
     let settingsPromise = null;
+    let currentStep = "account"; // account | deposit | chat | guest
+    let lastStatus = null;
+    let i18nGetter = () => ({});
+    let gateCallbacks = {};
+    let awaitingReturn = false;
+    let refreshInFlight = null;
+    let lastRefreshAt = 0;
+    let waitLoopActive = false;
+    let waitAbort = null;
 
     function getTg() {
         return global.Telegram && global.Telegram.WebApp
@@ -30,8 +39,12 @@
     }
 
     function apiBase() {
-        // Всегда same-origin proxy на Vercel → upstream STATUS_API_URL (можно http)
         return (cfg().STATUS_API_URL || "/api").replace(/\/$/, "") || "/api";
+    }
+
+    function t(key, fallback) {
+        const dict = i18nGetter() || {};
+        return dict[key] || fallback || key;
     }
 
     async function loadAppSettings() {
@@ -82,7 +95,6 @@
 
         if (!id) return template;
 
-        // Уже есть sub_id1=... — подставляем значение
         if (/[?&]sub_id1=/i.test(template)) {
             return template.replace(
                 /([?&]sub_id1=)[^&]*/i,
@@ -90,63 +102,9 @@
             );
         }
 
-        // В конец: &sub_id1= если в ссылке уже есть ?, иначе ?sub_id1=
         template = template.replace(/[?&]+$/, "");
         const join = template.includes("?") ? "&" : "?";
         return `${template}${join}sub_id1=${encodeURIComponent(id)}`;
-    }
-
-    function setNavActive(which) {
-        const broker = document.getElementById("navBroker")
-            || document.querySelector("[data-nav='broker']");
-        const chat = document.getElementById("navChat")
-            || document.querySelector("[data-nav='chat']");
-        if (broker) broker.classList.toggle("active", which === "broker");
-        if (chat) chat.classList.toggle("active", which === "chat");
-    }
-
-    function ensureBrokerView() {
-        let view = document.getElementById("brokerView");
-        if (view) return view;
-
-        view = document.createElement("div");
-        view.id = "brokerView";
-        view.className = "broker-view hidden";
-        view.setAttribute("aria-hidden", "true");
-        view.innerHTML = '<iframe id="brokerFrame" class="broker-frame" title="Broker" src="about:blank" allow="clipboard-write; payment *; fullscreen"></iframe>';
-        document.body.appendChild(view);
-        return view;
-    }
-
-    function closeBroker() {
-        const view = document.getElementById("brokerView");
-        const frame = document.getElementById("brokerFrame");
-        if (view) {
-            view.classList.add("hidden");
-            view.setAttribute("aria-hidden", "true");
-        }
-        if (frame) frame.src = "about:blank";
-        document.body.classList.remove("broker-open");
-        setNavActive("chat");
-    }
-
-    async function openBroker(userId) {
-        await loadAppSettings();
-        hideAccessModal();
-
-        const uid = userId != null
-            ? userId
-            : (getTelegramUser() && getTelegramUser().id);
-        const url = buildBrokerUrl(uid);
-
-        const view = ensureBrokerView();
-        const frame = document.getElementById("brokerFrame");
-        if (frame) frame.src = url;
-
-        view.classList.remove("hidden");
-        view.setAttribute("aria-hidden", "false");
-        document.body.classList.add("broker-open");
-        setNavActive("broker");
     }
 
     async function fetchUserStatus(telegramId) {
@@ -160,121 +118,372 @@
         return res.json();
     }
 
-    function accessMessage(status, i18n) {
-        const t = i18n || {};
-        const min = (status && status.min_deposit) || cfg().MIN_DEPOSIT || 100;
-        if (!status || status.error === "no_api") {
-            return t.access_no_user || "Please open this app via Telegram.";
-        }
-        if (!status.registered) {
-            return t.access_need_reg
-                || "Register on Pocket Option via Broker to unlock AI Chat.";
-        }
-        if ((status.deposit || 0) < min) {
-            const tpl = t.access_need_deposit
-                || "Deposit at least ${min}. Your deposit: ${current}.";
-            return tpl
-                .replace("{min}", String(min))
-                .replace("${min}", String(min))
-                .replace("{current}", String(status.deposit || 0))
-                .replace("${current}", String(status.deposit || 0));
-        }
-        return t.access_denied || "AI Chat is locked.";
-    }
-
-    function showAccessModal(opts) {
-        const modal = document.getElementById("accessModal");
-        if (!modal) return;
-        const title = document.getElementById("accessModalTitle");
-        const desc = document.getElementById("accessModalDesc");
-        if (title && opts.title) title.textContent = opts.title;
-        if (desc && opts.desc) desc.textContent = opts.desc;
-        modal.classList.remove("hidden");
-        modal.classList.add("open");
-        modal.style.pointerEvents = "auto";
-    }
-
-    function hideAccessModal() {
-        const modal = document.getElementById("accessModal");
-        if (!modal) return;
-        modal.classList.add("hidden");
-        modal.classList.remove("open");
-    }
-
-    async function ensureChatAccess(i18n) {
-        const user = getTelegramUser();
-        if (!user || !user.id) {
-            showAccessModal({
-                title: (i18n && i18n.access_title) || "Access denied",
-                desc: (i18n && i18n.access_no_user)
-                    || "Please open this app via Telegram.",
-            });
-            return false;
-        }
-        let status;
-        try {
-            status = await fetchUserStatus(user.id);
-        } catch (e) {
-            console.warn("[access] status failed", e);
-            showAccessModal({
-                title: (i18n && i18n.access_title) || "Access denied",
-                desc: (i18n && i18n.access_no_user)
-                    || "Please open this app via Telegram.",
-            });
-            return false;
-        }
-        if (status.chat_unlocked) return true;
-        showAccessModal({
-            title: (i18n && i18n.access_title) || "AI Chat locked",
-            desc: accessMessage(status, i18n),
+    async function waitUserStatus(telegramId, known, signal) {
+        await loadAppSettings();
+        const base = apiBase();
+        const q = new URLSearchParams({
+            telegram_id: String(telegramId),
+            known_registered: known && known.registered ? "1" : "0",
+            known_unlocked: known && known.chat_unlocked ? "1" : "0",
+            known_deposit: known && known.deposit != null ? String(known.deposit) : "-1",
+            timeout: "20",
         });
-        return false;
+        const res = await fetch(`${base}/user/wait?${q.toString()}`, {
+            method: "GET",
+            signal: signal,
+        });
+        if (!res.ok) throw new Error("wait_http_" + res.status);
+        return res.json();
     }
 
-    function bindNav(options) {
-        const i18nGetter = options && options.getI18n
+    function applyStatus(status, opts) {
+        opts = opts || gateCallbacks;
+        lastStatus = status;
+        const step = resolveStep(status);
+
+        if (step === "chat") {
+            awaitingReturn = false;
+            stopWaitLoop();
+            showOnboarding(false);
+            if (typeof opts.onUnlocked === "function") opts.onUnlocked(status);
+            return { ok: true, step: "chat", status };
+        }
+
+        showOnboarding(true);
+        setTab(step);
+        startWaitLoop();
+        if (typeof opts.onLocked === "function") opts.onLocked(status);
+        return { ok: false, step, status };
+    }
+
+    function stopWaitLoop() {
+        waitLoopActive = false;
+        if (waitAbort) {
+            try { waitAbort.abort(); } catch (_) {}
+            waitAbort = null;
+        }
+    }
+
+    function startWaitLoop() {
+        if (waitLoopActive) return;
+        if (currentStep === "chat" || currentStep === "guest") return;
+        waitLoopActive = true;
+
+        (async function loop() {
+            while (waitLoopActive && currentStep !== "chat" && currentStep !== "guest") {
+                const user = getTelegramUser();
+                if (!user || !user.id) break;
+
+                waitAbort = typeof AbortController !== "undefined"
+                    ? new AbortController()
+                    : null;
+                try {
+                    const data = await waitUserStatus(
+                        user.id,
+                        lastStatus,
+                        waitAbort && waitAbort.signal
+                    );
+                    if (!waitLoopActive) break;
+                    if (data && data.changed) {
+                        applyStatus(data, gateCallbacks);
+                        if (resolveStep(data) === "chat") break;
+                    } else {
+                        // long-poll timeout без изменений — сразу новый wait
+                        await new Promise((r) => setTimeout(r, 50));
+                    }
+                } catch (e) {
+                    if (e && e.name === "AbortError") break;
+                    console.warn("[access] wait failed", e);
+                    // пауза только при ошибке сети
+                    await new Promise((r) => setTimeout(r, 2500));
+                } finally {
+                    waitAbort = null;
+                }
+            }
+            waitLoopActive = false;
+        })();
+    }
+
+    function openBrokerExternal(userId) {
+        const uid = userId != null
+            ? userId
+            : (getTelegramUser() && getTelegramUser().id);
+        const url = buildBrokerUrl(uid);
+        const tg = getTg();
+        if (tg && typeof tg.openLink === "function") {
+            try {
+                tg.openLink(url);
+                return;
+            } catch (_) {}
+        }
+        global.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    function $(id) {
+        return document.getElementById(id);
+    }
+
+    function showOnboarding(show) {
+        const root = $("onboarding");
+        if (!root) return;
+        root.classList.toggle("hidden", !show);
+        root.setAttribute("aria-hidden", show ? "false" : "true");
+        document.body.classList.toggle("onboarding-open", !!show);
+    }
+
+    function setTab(step) {
+        const tabAccount = $("obTabAccount");
+        const tabDeposit = $("obTabDeposit");
+        const line = $("obTabLine");
+        const panelAccount = $("obPanelAccount");
+        const panelDeposit = $("obPanelDeposit");
+        const panelGuest = $("obPanelGuest");
+        const stepLabel = $("obStepLabel");
+        const footer = $("obFooter");
+        const ctaText = $("obCtaText");
+        const depDesc = $("obDepDesc");
+        const depMeta = $("obDepMeta");
+
+        currentStep = step;
+
+        if (panelGuest) panelGuest.classList.toggle("hidden", step !== "guest");
+        if (panelAccount) panelAccount.classList.toggle("hidden", step !== "account");
+        if (panelDeposit) panelDeposit.classList.toggle("hidden", step !== "deposit");
+
+        if (step === "guest") {
+            if (tabAccount) {
+                tabAccount.classList.remove("active");
+                tabAccount.disabled = true;
+            }
+            if (tabDeposit) {
+                tabDeposit.classList.remove("active");
+                tabDeposit.disabled = true;
+            }
+            if (stepLabel) stepLabel.textContent = "";
+            if (footer) footer.classList.add("hidden");
+            return;
+        }
+
+        if (footer) footer.classList.remove("hidden");
+
+        const registered = !!(lastStatus && lastStatus.registered);
+
+        if (tabAccount) {
+            tabAccount.disabled = false;
+            tabAccount.classList.toggle("active", step === "account");
+            tabAccount.setAttribute("aria-selected", step === "account" ? "true" : "false");
+        }
+        if (tabDeposit) {
+            tabDeposit.disabled = !registered;
+            tabDeposit.classList.toggle("active", step === "deposit");
+            tabDeposit.setAttribute("aria-selected", step === "deposit" ? "true" : "false");
+        }
+        if (line) line.classList.toggle("deposit", step === "deposit");
+
+        if (stepLabel) {
+            stepLabel.textContent = step === "deposit"
+                ? t("ob_step_2", "STEP 2 OF 2")
+                : t("ob_step_1", "STEP 1 OF 2");
+        }
+
+        if (ctaText) {
+            ctaText.textContent = step === "deposit"
+                ? t("ob_dep_cta", "Deposit")
+                : t("ob_reg_cta", "Register");
+        }
+
+        if (step === "deposit" && depDesc) {
+            const min = (lastStatus && lastStatus.min_deposit) || cfg().MIN_DEPOSIT || 100;
+            const tpl = t(
+                "ob_dep_desc",
+                "Deposit at least ${min}$ to unlock AI Chat. After the deposit is credited, return here."
+            );
+            depDesc.textContent = tpl
+                .replace(/\$\{min\}/g, String(min))
+                .replace(/\{min\}/g, String(min));
+        }
+
+        if (depMeta) {
+            if (step === "deposit" && lastStatus) {
+                const min = lastStatus.min_deposit || cfg().MIN_DEPOSIT || 100;
+                const cur = lastStatus.deposit || 0;
+                const tpl = t(
+                    "ob_dep_meta",
+                    "Minimum: ${min}$ · Your deposit: ${current}$"
+                );
+                depMeta.textContent = tpl
+                    .replace(/\$\{min\}/g, String(min))
+                    .replace(/\{min\}/g, String(min))
+                    .replace(/\$\{current\}/g, String(cur))
+                    .replace(/\{current\}/g, String(cur));
+            } else {
+                depMeta.textContent = "";
+            }
+        }
+    }
+
+    function applyI18nStatic() {
+        document.querySelectorAll("#onboarding [data-i18n]").forEach((node) => {
+            const key = node.getAttribute("data-i18n");
+            if (!key) return;
+            const val = t(key, node.textContent);
+            if (val) node.textContent = val;
+        });
+    }
+
+    function resolveStep(status) {
+        if (!status) return "account";
+        if (status.chat_unlocked) return "chat";
+        if (status.registered) return "deposit";
+        return "account";
+    }
+
+    async function refreshGate(options) {
+        const opts = Object.assign({}, gateCallbacks, options || {});
+        if (refreshInFlight) return refreshInFlight;
+
+        refreshInFlight = (async () => {
+            lastRefreshAt = Date.now();
+            stopWaitLoop();
+            const user = getTelegramUser();
+
+            if (!user || !user.id) {
+                lastStatus = null;
+                showOnboarding(true);
+                setTab("guest");
+                if (typeof opts.onLocked === "function") opts.onLocked();
+                return { ok: false, step: "guest" };
+            }
+
+            let status;
+            try {
+                status = await fetchUserStatus(user.id);
+            } catch (e) {
+                console.warn("[access] status failed", e);
+                lastStatus = null;
+                showOnboarding(true);
+                setTab("account");
+                startWaitLoop();
+                if (typeof opts.onLocked === "function") opts.onLocked();
+                return { ok: false, step: "account", error: true };
+            }
+
+            return applyStatus(status, opts);
+        })();
+
+        try {
+            return await refreshInFlight;
+        } finally {
+            refreshInFlight = null;
+        }
+    }
+
+    /** Проверка только по факту возврата в Mini App (без таймера). */
+    function checkOnReturn(force) {
+        if (currentStep === "chat") return;
+        if (!force && !awaitingReturn && document.visibilityState !== "visible") return;
+        if (!force && Date.now() - lastRefreshAt < 1200) return;
+        refreshGate({});
+    }
+
+    function bindOnboarding(options) {
+        gateCallbacks = {
+            onUnlocked: options && options.onUnlocked,
+            onLocked: options && options.onLocked,
+        };
+        i18nGetter = options && options.getI18n
             ? options.getI18n
             : () => ({});
-        const onUnlockedChat = options && options.onUnlockedChat;
 
+        applyI18nStatic();
         loadAppSettings();
 
-        document.querySelectorAll("[data-nav='broker']").forEach((el) => {
-            el.addEventListener("click", (e) => {
-                e.preventDefault();
-                openBroker();
-            });
-        });
+        const tabAccount = $("obTabAccount");
+        const tabDeposit = $("obTabDeposit");
+        const cta = $("obCta");
 
-        document.querySelectorAll("[data-nav='chat']").forEach((el) => {
-            el.addEventListener("click", async (e) => {
-                e.preventDefault();
-                closeBroker();
-                const ok = await ensureChatAccess(i18nGetter());
-                if (!ok) return;
-                if (typeof onUnlockedChat === "function") {
-                    onUnlockedChat();
-                }
+        if (tabAccount) {
+            tabAccount.addEventListener("click", () => {
+                if (currentStep === "guest") return;
+                setTab("account");
             });
-        });
-
-        const openBtn = document.getElementById("accessOpenBrokerBtn");
-        if (openBtn) {
-            openBtn.addEventListener("click", () => openBroker());
         }
-        // Модалку доступа нельзя закрыть — только Open Broker
+        if (tabDeposit) {
+            tabDeposit.addEventListener("click", () => {
+                if (tabDeposit.disabled) return;
+                setTab("deposit");
+            });
+        }
+        if (cta) {
+            cta.addEventListener("click", async () => {
+                await loadAppSettings();
+                awaitingReturn = true;
+                openBrokerExternal();
+            });
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                checkOnReturn(true);
+            }
+        });
+
+        global.addEventListener("pageshow", () => checkOnReturn(true));
+        global.addEventListener("focus", () => checkOnReturn(false));
+
+        const tg = getTg();
+        if (tg && typeof tg.onEvent === "function") {
+            try {
+                tg.onEvent("activated", () => checkOnReturn(true));
+                tg.onEvent("viewportChanged", () => {
+                    if (awaitingReturn) checkOnReturn(false);
+                });
+            } catch (_) {}
+        }
+
+        return refreshGate(gateCallbacks);
     }
+
+    // Back-compat shims
+    function openBroker() {
+        openBrokerExternal();
+    }
+    function closeBroker() {
+        /* no-op: iframe removed */
+    }
+    async function ensureChatAccess(i18n) {
+        if (i18n) {
+            const prev = i18nGetter;
+            i18nGetter = () => i18n;
+            const result = await refreshGate({});
+            i18nGetter = prev;
+            return result.ok;
+        }
+        const result = await refreshGate({});
+        return result.ok;
+    }
+    function bindNav(options) {
+        return bindOnboarding(options);
+    }
+    function showAccessModal() { /* replaced by onboarding */ }
+    function hideAccessModal() { showOnboarding(false); }
+    function accessMessage() { return ""; }
 
     global.AppAccess = {
         openBroker,
         closeBroker,
+        openBrokerExternal,
         fetchUserStatus,
         ensureChatAccess,
         bindNav,
+        bindOnboarding,
+        refreshGate,
+        applyI18nStatic,
         loadAppSettings,
         getTelegramUser,
         hideAccessModal,
         showAccessModal,
         accessMessage,
+        buildBrokerUrl,
     };
 })(window);

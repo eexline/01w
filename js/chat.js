@@ -1,5 +1,5 @@
 /* =======================================================================
-   NOVA AI — AI CHAT section
+   DAVID AI — AI CHAT section
    Chat-style signal desk. One signal at a time: a new one replaces the old,
    switching the model starts a clean chat. No history is stored.
 
@@ -97,6 +97,24 @@ const T = {
         access_open_broker: "Open Broker",
         access_error: "Please open this app via Telegram.",
         access_no_user: "Please open this app via Telegram.",
+        ob_tab_account: "Account",
+        ob_tab_deposit: "Deposit",
+        ob_step_1: "STEP 1 OF 2",
+        ob_step_2: "STEP 2 OF 2",
+        ob_reg_title: "Create your account",
+        ob_reg_desc: "Register with the broker using the button below to get access to AI signals. It takes about two minutes.",
+        ob_reg_s1: "Tap Register",
+        ob_reg_s2: "Sign up on the broker's page",
+        ob_reg_s3: "Come back here, we confirm it automatically",
+        ob_reg_cta: "Register",
+        ob_dep_title: "Make a deposit",
+        ob_dep_desc: "Deposit at least ${min}$ to unlock AI Chat. After the deposit is credited, return here.",
+        ob_dep_s1: "Tap Deposit",
+        ob_dep_s2: "Fund your broker account",
+        ob_dep_s3: "Come back — access opens automatically",
+        ob_dep_cta: "Deposit",
+        ob_dep_meta: "Minimum: ${min}$ · Your deposit: ${current}$",
+        ob_guest_title: "Open via Telegram",
         chat_hero_sub: "Set the instrument, market and expiration — then tap send to get a signal.",
         market_regular: "Regular", market_otc: "OTC",
         sheet_pair: "Currency pair", sheet_market: "Market", sheet_tf: "Expiration time",
@@ -130,6 +148,24 @@ const T = {
         access_open_broker: "Открыть Broker",
         access_error: "Откройте приложение через Telegram.",
         access_no_user: "Откройте приложение через Telegram.",
+        ob_tab_account: "Аккаунт",
+        ob_tab_deposit: "Депозит",
+        ob_step_1: "ШАГ 1 ИЗ 2",
+        ob_step_2: "ШАГ 2 ИЗ 2",
+        ob_reg_title: "Создайте аккаунт",
+        ob_reg_desc: "Зарегистрируйтесь у брокера по кнопке ниже, чтобы получить доступ к AI-сигналам. Это займёт около двух минут.",
+        ob_reg_s1: "Нажмите «Регистрация»",
+        ob_reg_s2: "Зарегистрируйтесь на сайте брокера",
+        ob_reg_s3: "Вернитесь сюда — мы подтвердим это автоматически",
+        ob_reg_cta: "Регистрация",
+        ob_dep_title: "Сделайте депозит",
+        ob_dep_desc: "Пополните счёт минимум на ${min}$, чтобы открыть AI Чат. После зачисления депозита вернитесь сюда.",
+        ob_dep_s1: "Нажмите «Депозит»",
+        ob_dep_s2: "Пополните счёт у брокера",
+        ob_dep_s3: "Вернитесь — доступ откроется автоматически",
+        ob_dep_cta: "Депозит",
+        ob_dep_meta: "Минимум: ${min}$ · Ваш депозит: ${current}$",
+        ob_guest_title: "Откройте через Telegram",
         chat_hero_sub: "Укажите инструмент, рынок и время экспирации — затем нажмите отправку, чтобы получить сигнал.",
         market_regular: "Обычный", market_otc: "OTC",
         sheet_pair: "Валютная пара", sheet_market: "Рынок", sheet_tf: "Время экспирации",
@@ -325,8 +361,8 @@ const T = {
 /* ------------------------------- STATE -------------------------------- */
 
 const LS_LANG = "trade_ai_lang";
-const LS_MODEL = "nova_chat_model";
-const LS_SIGNAL = "nova_chat_signal";
+const LS_MODEL = "david_chat_model";
+const LS_SIGNAL = "david_chat_signal";
 
 let lang = localStorage.getItem(LS_LANG) || "en";
 if (!T[lang]) lang = "en";
@@ -994,6 +1030,14 @@ function setLang(code) {
     localStorage.setItem(LS_LANG, code);
     applyStaticText();
     el.heroSub.textContent = t("chat_hero_sub");
+    if (window.AppAccess) {
+        if (typeof window.AppAccess.applyI18nStatic === "function") {
+            window.AppAccess.applyI18nStatic();
+        }
+        if (typeof window.AppAccess.refreshGate === "function") {
+            window.AppAccess.refreshGate({});
+        }
+    }
     renderComposer();
     // the visible exchange is rebuilt in the new language
     if (activeSignal && !activeSignal.detached) {
@@ -1120,7 +1164,7 @@ renderComposer();
 restoreSignal();
 
 
-/* Broker + chat access gate */
+/* Onboarding gate: Account → Deposit → Chat */
 (function bootAccess() {
     if (!window.AppAccess) return;
 
@@ -1137,34 +1181,13 @@ restoreSignal();
         if (composer) composer.style.pointerEvents = locked ? "none" : "";
     }
 
-    window.AppAccess.bindNav({
+    // Сразу прячем чат, пока не проверим статус
+    setChatLocked(true);
+    document.body.classList.add("onboarding-open");
+
+    window.AppAccess.bindOnboarding({
         getI18n: i18nBag,
-        onUnlockedChat: () => {
-            setChatLocked(false);
-            window.AppAccess.closeBroker();
-        },
-    });
-
-    window.AppAccess.ensureChatAccess(i18nBag()).then((ok) => {
-        const user = window.AppAccess.getTelegramUser();
-        if (!user || !user.id) {
-            setChatLocked(true);
-            const nav = document.querySelector(".bottom-nav");
-            if (nav) nav.style.pointerEvents = "auto";
-            const modal = document.getElementById("accessModal");
-            if (modal) modal.style.pointerEvents = "auto";
-            return;
-        }
-
-        if (ok) {
-            setChatLocked(false);
-            return;
-        }
-
-        setChatLocked(true);
-        const nav = document.querySelector(".bottom-nav");
-        if (nav) nav.style.pointerEvents = "auto";
-        const modal = document.getElementById("accessModal");
-        if (modal) modal.style.pointerEvents = "auto";
+        onUnlocked: () => setChatLocked(false),
+        onLocked: () => setChatLocked(true),
     });
 })();
