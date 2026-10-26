@@ -23,8 +23,8 @@
     --tg-bottom: env(safe-area-inset-bottom, 0px);
 
     --nav-h: 0px;
-    /* нижний навбар убран — отступ только под safe-area */
-    --nav-stack: calc(12px + var(--tg-bottom, 0px));
+    /* нижний навбар убран — safe-area + небольшой зазор над home-indicator */
+    --nav-stack: calc(var(--tg-bottom, 0px) + 17px);
     --radius-lg: 22px;
     --radius-md: 16px;
     --radius-sm: 12px;
@@ -770,7 +770,8 @@ button {
 
 .composer {
     flex: 0 0 auto;
-    padding: 0 12px 10px;
+    /* +5px над белой полоской iPhone (home indicator) */
+    padding: 0 12px calc(var(--tg-bottom, 0px) + 15px);
 }
 
 .composer-inner {
@@ -1329,8 +1330,9 @@ html[data-theme="gemini"] .modal-card { background: #121320; }
         radial-gradient(ellipse 80% 50% at 50% -10%, var(--glow), transparent 55%),
         var(--bg);
     color: var(--text);
+    /* как .tbar — начинается примерно у логотипа DAVID AI */
     padding:
-        calc(var(--tg-top, 0px) + 56px)
+        calc(var(--tg-top, 0px) + 14px)
         22px
         calc(var(--tg-bottom, 0px) + 24px);
     box-sizing: border-box;
@@ -1355,7 +1357,7 @@ html[data-theme="gemini"] .modal-card { background: #121320; }
     grid-template-columns: 1fr 1fr;
     gap: 0;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 28px;
+    margin-bottom: 22px;
 }
 
 .ob-tab {
@@ -1367,18 +1369,36 @@ html[data-theme="gemini"] .modal-card { background: #121320; }
     font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.01em;
-    padding: 14px 8px 16px;
-    cursor: pointer;
+    padding: 12px 8px 14px;
+    cursor: default;
+    pointer-events: none;
     transition: color 0.2s var(--ease);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
 }
 
 .ob-tab.active {
     color: var(--text);
 }
 
-.ob-tab:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
+.ob-tab.done {
+    color: var(--acc-text);
+}
+
+.ob-tab.done::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    border-radius: 50%;
+    background: var(--acc);
+    box-shadow: 0 0 0 3px var(--acc-soft);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23fff' d='M6.5 11.2 3.3 8l1.1-1.1 2.1 2.1 4.6-4.6L12.2 5.5z'/%3E%3C/svg%3E");
+    background-size: 12px 12px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .ob-tab-line {

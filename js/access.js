@@ -252,13 +252,14 @@
 
         if (step === "guest") {
             if (tabAccount) {
-                tabAccount.classList.remove("active");
-                tabAccount.disabled = true;
+                tabAccount.classList.remove("active", "done");
+                tabAccount.setAttribute("aria-selected", "false");
             }
             if (tabDeposit) {
-                tabDeposit.classList.remove("active");
-                tabDeposit.disabled = true;
+                tabDeposit.classList.remove("active", "done");
+                tabDeposit.setAttribute("aria-selected", "false");
             }
+            if (line) line.classList.remove("deposit");
             if (stepLabel) stepLabel.textContent = "";
             if (footer) footer.classList.add("hidden");
             return;
@@ -267,15 +268,17 @@
         if (footer) footer.classList.remove("hidden");
 
         const registered = !!(lastStatus && lastStatus.registered);
+        const unlocked = !!(lastStatus && lastStatus.chat_unlocked);
 
+        // Вкладки только индикаторы — переключать вручную нельзя
         if (tabAccount) {
-            tabAccount.disabled = false;
             tabAccount.classList.toggle("active", step === "account");
+            tabAccount.classList.toggle("done", registered);
             tabAccount.setAttribute("aria-selected", step === "account" ? "true" : "false");
         }
         if (tabDeposit) {
-            tabDeposit.disabled = !registered;
             tabDeposit.classList.toggle("active", step === "deposit");
+            tabDeposit.classList.toggle("done", unlocked || (registered && step === "chat"));
             tabDeposit.setAttribute("aria-selected", step === "deposit" ? "true" : "false");
         }
         if (line) line.classList.toggle("deposit", step === "deposit");
@@ -398,22 +401,8 @@
         applyI18nStatic();
         loadAppSettings();
 
-        const tabAccount = $("obTabAccount");
-        const tabDeposit = $("obTabDeposit");
         const cta = $("obCta");
 
-        if (tabAccount) {
-            tabAccount.addEventListener("click", () => {
-                if (currentStep === "guest") return;
-                setTab("account");
-            });
-        }
-        if (tabDeposit) {
-            tabDeposit.addEventListener("click", () => {
-                if (tabDeposit.disabled) return;
-                setTab("deposit");
-            });
-        }
         if (cta) {
             cta.addEventListener("click", async () => {
                 await loadAppSettings();
